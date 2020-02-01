@@ -12,20 +12,6 @@ from seqeval.metrics import accuracy_score
 from seqeval.metrics import classification_report
 from seqeval.metrics import f1_score
 
-# from keras.callbacks import Callback
-# # from sklearn.metrics import confusion_matrix, f1_score, precision_score, recall_score
-# class Metrics(Callback):
-#     def on_train_begin(self, logs={}):
-#         self.val_f1s = []
-
-#     def on_epoch_end(self, epoch, logs={}):
-#         f_score = 2*logs['val_precision']*logs['val_recall']/(logs['val_precision']+logs['val_recall'])
-#         self.val_f1s.append(f_score)
-#         print("f_score: {0}".format(f_score))
-#         return
-
-# metrics = Metrics()
-
 print('Loading Word Embedding model...')
 
 start_time = time.time()
@@ -111,23 +97,9 @@ for i, label in enumerate(labels):
 train_x, train_y = sents[:3673], labels[:3673]
 test_x, test_y = sents[3674:], labels[3674:]
 
-# tf metrics wrapper
-def as_keras_metric(method):
-    import functools
-    from keras import backend as K
-    @functools.wraps(method)
-    def wrapper(self, args, **kwargs):
-        """ Wrapper for turning tensorflow metrics into keras metrics """
-        value, update_op = method(self, args, **kwargs)
-        K.get_session().run(tf.local_variables_initializer())
-        with tf.control_dependencies([update_op]):
-            value = tf.identity(value)
-        return value
-    return wrapper
-
 # build model
 train_model, crf_layer = model.build_model()
-train_model.compile(optimizer="rmsprop", loss=crf_layer.loss_function, metrics=[crf_layer.accuracy, as_keras_metric(tf.metrics.precision), as_keras_metric(tf.metrics.recall), as_keras_metric(tf.contrib.metrics.f1_score)])
+train_model.compile(optimizer="rmsprop", loss=crf_layer.loss_function, metrics=[crf_layer.accuracy])
 train_model.summary()
 
 # train model
@@ -139,8 +111,7 @@ train_model.save_weights('weights.hd5f')
 # plot accuracy
 hist = pd.DataFrame(history.history)
 plt.style.use("ggplot")
-plt.figure(figsize=(12,12))
-plt.plot(hist["val_f1_score"])
+plt.figure(figsize=(6,6))
 plt.plot(hist["val_acc"])
 plt.plot(hist["val_loss"])
 plt.show()
